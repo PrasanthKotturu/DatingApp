@@ -8,6 +8,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
+using System.Net;
+using Microsoft.AspNetCore.Diagnostics;
+using DatingApp.API.Helpers;
 
 namespace DatingApp.API
 {
@@ -37,7 +41,7 @@ namespace DatingApp.API
                     .GetBytes(Configuration.GetSection("AppSettings:Token").Value)),
                     ValidateIssuer = false,
                     ValidateAudience=false
-            };
+                };
             });
         }
 
@@ -47,6 +51,17 @@ namespace DatingApp.API
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
+        }else{
+            app.UseExceptionHandler(builder=>{
+                builder.Run(async context=>{
+                    context.Response.StatusCode=(int)HttpStatusCode.InternalServerError;
+                    var error=context.Features.Get<IExceptionHandlerFeature>();
+                    if(error!=null){
+                        context.Response.AddApplicationError(error.Error.Message);
+                        await context.Response.WriteAsync(error.Error.Message);
+                    }
+                });
+            });
         }
 
         // app.UseHttpsRedirection();
@@ -60,7 +75,7 @@ namespace DatingApp.API
         {
             endpoints.MapControllers();
         });
-
+    
     }
 }
 }
